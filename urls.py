@@ -1,5 +1,6 @@
 from urllib.parse import urlsplit
 import urllib.request
+import urllib.response
 
 from bs4 import BeautifulSoup
 
@@ -15,30 +16,42 @@ class UrlVisitor:
         self.base = self.scheme + "://" + self.domain + "/"
         self.start = start 
         self.elements = [start]
-        self.index = 0
+        self.pages = set(self.elements)
         self.parser = 'html.parser'
         self.headers = {
-            'User-agent': 'Mozilla/5.0'            
+            'User-agent': 'Mozilla/5.0' ,    
+            'Content-Type': "text/plain;charset=UTF-8"       
         }
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        if self.index >= len(self.elements):
+        if len(self.elements) == 0:
             raise StopIteration
         # pop first url, read content and find links
         result = None 
-        with self.read(self.elements[self.index]) as response:
-            content = BeautifulSoup(response.read(), self.parser, from_encoding=response.info().get_param('charset'))
-            result = content.text
-            # then, look for the next urls to visit
-            links = list(set(content.find_all('a', href=True)))
-            for link in links:
-                parsed = self.standardize(link.get("href"))
-                if parsed is not None and parsed not in self.elements and self.accept(parsed):
-                    self.elements.append(parsed)
-        self.index = self.index + 1    
+        current = self.elements.pop()
+        # call may fail, and process should keep going
+        content = None
+        response = None 
+        try:
+            request = urllib.request.Request(current, headers=dict(self.headers))
+            response = urllib.request.urlopen(request)
+            payload = response.read()
+            content = BeautifulSoup(payload, self.parser, from_encoding=response.info().get_param('charset'))    
+        except:
+            self.pages.add(current)
+            return None 
+        finally: 
+            if response is not None:
+                response.close()
+        # extract text and maps it
+        result = content.text
+        # then, look for the next urls to visit
+        self.schedule(content)
+        # page is now processed
+        self.pages.add(current)
         return result 
 
     def accept(self, url:str) -> bool:
@@ -47,12 +60,15 @@ class UrlVisitor:
         Add in here all the logic you need to exclude resources
         """
         split = urlsplit(url)
+        if split is None:
+            return False
         # not same domain ==> leave
         if not split.netloc.endswith(self.domain):
             return False
         # wordpress, technical content, skip it
         if split.path.startswith("/wp-"):
             return False
+        # exclude some content types that are irrelevant
         if not url.endswith("/"):
             resource_type = url[url.rindex(".")+1:]
             return resource_type not in ["css","jpg","jpeg","pdf"]
@@ -70,10 +86,12 @@ class UrlVisitor:
             return self.base[:-1]+url
         return url
 
-    def read(self, url:str) -> str:                
+    def schedule(self, content):
         """
-        Given an URL, read its content. 
-        It is not just read, it includes headers to add, etc
+        Given a BS4 content, parse it to find links to go through. 
+        This is a separate method so that you may add your own heuristics
         """
-        request = urllib.request.Request(url, headers=dict(self.headers))
-        return urllib.request.urlopen(request)
+        for link in content.find_all('a', href=True):
+                url = self.standardize(link.get("href"))
+                if url not in self.pages and self.accept(url):
+                    self.elements.append(url)

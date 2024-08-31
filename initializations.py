@@ -16,7 +16,7 @@ def usage():
     print("for instance: pipenv run main.py https://leparisien.fr")
 
 
-def build_iterator(url:str) -> Iterable[str]:
+def build_iterator(url:str) -> Iterable[str|None]:
     """
     Given a url, returns a tool to iterate from this url to the visible ones. 
     Result returns the text of each visited page as a string. 

@@ -11,8 +11,10 @@ if __name__== "__main__":
     url = args[0]
     lang = "fr"
     if len(args) == 2:
-        lang = args[2]
+        lang = args[1]
     # lang and url are set, build elements
     extractor = build_extractor(lang)
     for content in build_iterator(url):
+        if content is None:
+            continue
         extractor.extract(content)
