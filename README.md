@@ -17,21 +17,22 @@ For instance, wikipedia says it: they provide their full content as a database, 
 Then, assume you want to scrap website `https://iamawebsite.fr`. 
 Usage would be `pipenv run .\main.py https://iamawebsite.fr` 
 
-## NLP 
+## How do I change it ?
+
+Algorithm is a graph walkthrough with no cycle. 
+It just starts from the provided URL, explore each page to find outgoing links. 
+Then, it picks the next non processed page, it loads the page, etc. 
+
+Interesting parts are:
+* data clean to pass from HTML to plain text. Dealt with BS4, just a reponse.text
+* picking links. Dealt with a BS4 search for a href. Basic, you may want to change this part
+* NLP pipeline. This is the plus-value core. 
+
+### NLP 
 
 This section details the models and frameworks used. 
 
-### What framework / tool do you use for NLP ? 
-
-[Spacy](https://spacy.io/) 
-
-### What are supported languages ?
-
-French. 
-To change it, include a new model in `initializations.py`
-
-### Your model is not accurate / I am not happy with the results 
-
-Model is the smallest one, it focuses on speed more than accuracy. 
-To use a better model, change `initializations.py`
+* NLP library is [Spacy](https://spacy.io/) 
+* Supported languages are ... French. To change it, include a new model in `initializations.py`
+* Spacy model is the small one, it focuses on speed more than accuracy. To use a better model for your use case, change `initializations.py`
 

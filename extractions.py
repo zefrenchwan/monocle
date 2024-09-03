@@ -1,15 +1,23 @@
 import spacy.language
 import re
-
+from results import LocalResult
 
 class Extractor:
 
     def __init__(self, nlp: spacy.language.Language):
         self.processor = nlp
+        self.counters = dict()
 
-    def extract(self, raw:str):
+    def extract(self, raw:str, url: str) -> LocalResult:
         values = self.clean(raw)
-        print("\n".join(values))
+        text = ".\n".join(values)
+        result = LocalResult(url)
+        # then, process document
+        doc = self.processor(text)
+        for entity in doc.ents:
+            result.add(entity.text_with_ws, entity.label_)
+        return result 
+
         
     def clean(self,raw:str) -> list[str]:
         """

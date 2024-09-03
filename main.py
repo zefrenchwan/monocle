@@ -1,6 +1,6 @@
 import sys
 from initializations import *
-
+from results import LocalResult
 
 if __name__== "__main__":
     # read args, build parameters based on them
@@ -14,7 +14,14 @@ if __name__== "__main__":
         lang = args[1]
     # lang and url are set, build elements
     extractor = build_extractor(lang)
-    for content in build_iterator(url):
+    elements = []
+    for url, content in build_iterator(url):
         if content is None:
             continue
-        extractor.extract(content)
+        element = extractor.extract(content, url)
+        for key in element.keys():
+            print(key)
+            print(element.best_values(3, key))
+            print()
+        elements.append(element)
+    # then, reduce and build your own data

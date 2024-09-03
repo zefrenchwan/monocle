@@ -1,6 +1,7 @@
 from urllib.parse import urlsplit
 import urllib.request
 import urllib.response
+import re 
 
 from bs4 import BeautifulSoup
 
@@ -18,6 +19,8 @@ class UrlVisitor:
         self.elements = [start]
         self.pages = set(self.elements)
         self.parser = 'html.parser'
+        # source for this regexp: https://www.geeksforgeeks.org/python-check-url-string/
+        self.urlreader = re.compile(r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))", re.IGNORECASE)
         self.headers = {
             'User-agent': 'Mozilla/5.0' ,    
             'Content-Type': "text/plain;charset=UTF-8"       
@@ -26,12 +29,17 @@ class UrlVisitor:
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def __next__(self) -> tuple[str,str|None]:
+        """
+        Iterator over page and content. 
+        First value is URL, second value is page content, or none for reading failure
+        """
         if len(self.elements) == 0:
             raise StopIteration
         # pop first url, read content and find links
         result = None 
         current = self.elements.pop()
+        print(current)
         # call may fail, and process should keep going
         content = None
         response = None 
@@ -42,7 +50,7 @@ class UrlVisitor:
             content = BeautifulSoup(payload, self.parser, from_encoding=response.info().get_param('charset'))    
         except:
             self.pages.add(current)
-            return None 
+            return current, None 
         finally: 
             if response is not None:
                 response.close()
@@ -50,15 +58,15 @@ class UrlVisitor:
         result = content.text
         # then, look for the next urls to visit
         self.schedule(content)
-        # page is now processed
-        self.pages.add(current)
-        return result 
+        return current, result 
 
     def accept(self, url:str) -> bool:
         """
         test if an URL should be explored. 
         Add in here all the logic you need to exclude resources
         """
+        if url in ["#", "/#"]:
+            return False
         split = urlsplit(url)
         if split is None:
             return False
@@ -71,7 +79,7 @@ class UrlVisitor:
         # exclude some content types that are irrelevant
         if not url.endswith("/"):
             resource_type = url[url.rindex(".")+1:]
-            return resource_type not in ["css","jpg","jpeg","pdf"]
+            return resource_type not in ["css","jpg","jpeg","pdf","xml","json"]
         return True
 
 
@@ -91,7 +99,17 @@ class UrlVisitor:
         Given a BS4 content, parse it to find links to go through. 
         This is a separate method so that you may add your own heuristics
         """
-        for link in content.find_all('a', href=True):
-                url = self.standardize(link.get("href"))
-                if url not in self.pages and self.accept(url):
-                    self.elements.append(url)
+        matches = []
+        # restrict to href to avoid all the js scripts
+        for value in re.findall(r"href=\S+[\s>]",str(content)):
+            matchings = [matching[0] for matching in self.urlreader.findall(value)]
+            if len(matchings) != 0:
+                url = matchings[0]
+                matches.append(url)
+        # deduplicate
+        matches = list(set(matches))
+        for element in matches:
+            element = self.standardize(element)
+            if element not in self.pages and self.accept(element):
+                self.elements.append(element)
+            self.pages.add(element)
