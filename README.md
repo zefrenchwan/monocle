@@ -13,6 +13,11 @@ This tool scrapes a website starting at a given page.
 Be sure that the website allows it and that the load is acceptable for that website. 
 For instance, wikipedia says it: they provide their full content as a database, no need to webscrap them. 
 
+Second, *this code deals with NLP model itself, no need to install anything else*.
+During the first launch, code will not find the right model, so it will download it.  
+Reason is that spacy is a "technical detail" somehow, that an end user (you) does not have to bother with. 
+It comes with a counterpart: if your website is not in french, you need to change the code to download the correct spacy model. 
+
 
 Then, assume you want to scrap website `https://iamawebsite.fr`. 
 Usage would be `pipenv run .\main.py https://iamawebsite.fr` 
@@ -34,5 +39,5 @@ This section details the models and frameworks used.
 
 * NLP library is [Spacy](https://spacy.io/) 
 * Supported languages are ... French. To change it, include a new model in `initializations.py`
-* Spacy model is the small one, it focuses on speed more than accuracy. To use a better model for your use case, change `initializations.py`
+* Spacy model is the largest one, it focuses on accuracy. To use a better model for your use case, change `initializations.py`
 

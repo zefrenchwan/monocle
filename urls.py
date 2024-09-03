@@ -39,7 +39,6 @@ class UrlVisitor:
         # pop first url, read content and find links
         result = None 
         current = self.elements.pop()
-        print(current)
         # call may fail, and process should keep going
         content = None
         response = None 

@@ -37,7 +37,7 @@ def build_model(lang:str) -> spacy.language.Language:
     Create nlp model for a given language. 
     Download it if necessary
     """
-    models = {"fr":"fr_core_news_sm"}
+    models = {"fr":"fr_core_news_lg"}
     nlp = None 
     model = models[lang]
     try:
