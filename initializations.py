@@ -10,10 +10,11 @@ def usage():
     Display basic information about the tool
     """
     print("Tool to parse a website and extract named entities")
-    print("usage is: main.py website lang")
-    print("for instance: pipenv run main.py https://leparisien.fr fr")
-    print("lang parameter is optional, default is set to fr")
-    print("for instance: pipenv run main.py https://leparisien.fr")
+    print("Result is written into a json file")
+    print()
+    print("usage is: main.py website path")
+    print("for instance: pipenv run main.py https://leparisien.fr result.json")
+
 
 
 def build_iterator(url:str) -> Iterable[str|None]:
